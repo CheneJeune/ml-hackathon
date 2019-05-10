@@ -1,0 +1,7 @@
+# git ignore  #
+###################
+*/.settings/*
+*/.classpath
+*/.project
+npm-debug.log
+.DS_Store
