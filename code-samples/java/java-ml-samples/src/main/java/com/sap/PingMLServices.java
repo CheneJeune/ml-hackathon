@@ -1,17 +1,10 @@
 package com.sap;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.OutputStream;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.json.JSONArray;
@@ -21,7 +14,12 @@ import org.json.JSONTokener;
 public class PingMLServices {
 
 	public static void main(String[] args) throws Exception {
-		String apiKey = "nqahOCuNFAIw0inHUbKBJXcsCZf9rIs5";
+		if(args.length < 0) {
+			System.out.println("you should enter an APIKey: java PingMLServices myapikey");
+			System.exit(0);
+		}
+		
+		String apiKey = args[0];
 		String url = "https://sandbox.api.sap.com/mlfs/api/v2/text/translation";
 		
 		CloseableHttpClient httpClient = HttpClients.createDefault();
@@ -29,9 +27,6 @@ public class PingMLServices {
 		uploadFile.addHeader("Accept", "application/json");
 		uploadFile.addHeader("APIKey", apiKey);
 
-		//MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-
-		//JSONObject options = null;
 		String data = createTranslationJSON("Can you translate this please?").toString();
 				
 		StringEntity requestEntity = new StringEntity(data, ContentType.APPLICATION_JSON);

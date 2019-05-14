@@ -6,6 +6,8 @@ var path    = require('path');
 var fs      = require('fs');
 var bodyParser = require('body-parser')
 var request = require('request');
+var dotenv = require('dotenv');
+dotenv.config();
 
 // ---------------------------------------------------------------
 // Instantiate the app
@@ -13,21 +15,44 @@ var request = require('request');
 
 var app = express();
 
+var APIKey        = process.env.APIKey;
+var clientID      = process.env.clientID;
+var clientSecret  = process.env.clientSecret;
+var authenticationURL = process.env.authenticationURL;
+
 // Serve 'dynamic' jsx content being transformed if needed
 var srcDir = path.resolve(__dirname);
 var file;
 
-// parse application/json
-//app.use(bodyParser.json())
-
 app.post('/api/detect', function(req, res){
-  parseJSONBody(req, function(j){
-    console.log(j)
+  parseJSONBody(req, function(j){      
+    callLML("https://sandbox.api.sap.com/ml/api/v2alpha1/text/lang-detect/", j, function(body){
+      console.log(JSON.parse(body));
+      res.write(body)
+    });
   })
-  /*
-  callLML("https://sandbox.api.sap.com/ml/api/v2alpha1/text/lang-detect/", , function(body){
-    console.log(JSON.parse(body));
-  });*/
+});
+
+app.post('/api/bearer', function(req, res){
+  parseJSONBody(req, function(data){
+    getBearerToken(function(token){
+        request.post({
+          url: "https://mlftrial-language-detection.cfapps.eu10.hana.ondemand.com/api/v2alpha1/text/lang-detect/", 
+          body: JSON.stringify(data),
+          headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "Authorization": "Bearer " + token
+            }
+        }, function optionalCallback(err, httpResponse, body) {
+            if (err) {
+              return console.error('upload failed:', err);
+            }
+            console.log("response is: " + body)
+            res.send(body)
+        });
+    });
+  })
 });
 
 app.use('/', function (req, res) {
@@ -54,20 +79,43 @@ function parseJSONBody(res, callback){
     });
 }
 
-function callLML(url, data, callback){
+/*
+url: is the end point of the call
+data: is the message to send (json assumed)
+callback: to get the data backout
+*/
+function callLML(url, oData, callback){
   request.post({
       url: url, 
-      body: JSON.stringify(data),
+      body: JSON.stringify(oData),
       headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
-          "APIKey": "nqahOCuNFAIw0inHUbKBJXcsCZf9rIs5"//TODO put your api key here
+          "APIKey": APIKey
         }
     }, function optionalCallback(err, httpResponse, body) {
         if (err) {
           return console.error('upload failed:', err);
         }
         callback(body);
+  });
+}
+
+function getBearerToken(callback){
+    var token = Buffer.from(clientID + ':' + clientSecret).toString('base64');
+    console.log(token)
+    request.get({
+      url: authenticationURL, 
+      headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Basic " + token
+        }
+    }, function optionalCallback(err, httpResponse, body) {
+        if (err) {
+          return console.error('failed:', err);
+        }
+        callback(JSON.parse(body).access_token);
   });
 }
 
