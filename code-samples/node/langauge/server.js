@@ -1,12 +1,14 @@
 // ---------------------------------------------------------------
 // Import modules
 // ---------------------------------------------------------------
-var express = require('express');
-var path    = require('path');
-var fs      = require('fs');
-var bodyParser = require('body-parser')
-var request = require('request');
-var dotenv = require('dotenv');
+var express     = require('express');
+var path        = require('path');
+var fs          = require('fs');
+var request     = require('request');
+var csv         = require('csv-parser')
+var dotenv      = require('dotenv');
+
+//we need some variables.
 dotenv.config();
 
 // ---------------------------------------------------------------
@@ -15,9 +17,9 @@ dotenv.config();
 
 var app = express();
 
-var APIKey        = process.env.APIKey;
-var clientID      = process.env.clientID;
-var clientSecret  = process.env.clientSecret;
+var APIKey            = process.env.APIKey;
+var clientID          = process.env.clientID;
+var clientSecret      = process.env.clientSecret;
 var authenticationURL = process.env.authenticationURL;
 
 // Serve 'dynamic' jsx content being transformed if needed
@@ -28,33 +30,44 @@ app.post('/api/detect', function(req, res){
   parseJSONBody(req, function(j){      
     callLML("https://sandbox.api.sap.com/ml/api/v2alpha1/text/lang-detect/", j, function(body){
       console.log(JSON.parse(body));
-      res.write(body)
+      res.send(body)
     });
   })
 });
+
+/*
+Excercise: add a function that can call a translation service.
+*/
 
 app.post('/api/bearer', function(req, res){
   parseJSONBody(req, function(data){
     getBearerToken(function(token){
-        request.post({
-          url: "https://mlftrial-language-detection.cfapps.eu10.hana.ondemand.com/api/v2alpha1/text/lang-detect/", 
-          body: JSON.stringify(data),
-          headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              "Authorization": "Bearer " + token
-            }
-        }, function optionalCallback(err, httpResponse, body) {
-            if (err) {
-              return console.error('upload failed:', err);
-            }
-            console.log("response is: " + body)
-            res.send(body)
-        });
+      request.post({
+        url: "https://mlftrial-language-detection.cfapps.eu10.hana.ondemand.com/api/v2alpha1/text/lang-detect/", 
+        body: JSON.stringify(data),
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Bearer " + token
+          }
+      }, function optionalCallback(err, httpResponse, body) {
+          if (err) {
+            return console.error('upload failed:', err);
+          }
+          console.log("response is: " + body)
+          res.send(body)
+      });
     });
   })
 });
 
+app.get('/api/targetLanguages', function(req, res){
+  getTargets(req.query.targetLang, function(langs){
+    res.send(langs)
+  });
+});
+
+//the lightest HTTP server ever.
 app.use('/', function (req, res) {
     file = srcDir + req.path;
     res.sendFile(file);
@@ -107,16 +120,37 @@ function getBearerToken(callback){
     request.get({
       url: authenticationURL, 
       headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": "Basic " + token
-        }
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Basic " + token
+      }
     }, function optionalCallback(err, httpResponse, body) {
         if (err) {
           return console.error('failed:', err);
         }
         callback(JSON.parse(body).access_token);
   });
+}
+
+//"Source Language Name","Source Language Code","Target Language Name","Target Language Code" 
+/*
+Some helper code for little excercise.
+*/
+function getTargets(source, callback){
+  var targets = [];
+  fs.createReadStream('language-mapping.csv')
+    .pipe(csv())
+    .on('headers', function (headerList) {
+      //console.log('First header: %s', headerList)
+    })
+    .on('data', function (data) {
+      if(data['Source Language Code'] === source){
+        targets.push(data['Target Language Code'])
+      }
+   })
+    .on('end', function(){
+      callback(targets);
+    });
 }
 
 // ---------------------------------------------------------------
