@@ -21,6 +21,7 @@ var APIKey            = process.env.APIKey;
 var clientID          = process.env.clientID;
 var clientSecret      = process.env.clientSecret;
 var authenticationURL = process.env.authenticationURL;
+var baseURI           = proess.env.baseURL;
 
 // Serve 'dynamic' jsx content being transformed if needed
 var srcDir = path.resolve(__dirname);
@@ -43,7 +44,7 @@ app.post('/api/bearer', function(req, res){
   parseJSONBody(req, function(data){
     getBearerToken(function(token){
       request.post({
-        url: "https://mlftrial-language-detection.cfapps.eu10.hana.ondemand.com/api/v2alpha1/text/lang-detect/", 
+        url: baseURI + "/api/v2alpha1/text/lang-detect/", 
         body: JSON.stringify(data),
         headers: {
             "Content-Type": "application/json",
