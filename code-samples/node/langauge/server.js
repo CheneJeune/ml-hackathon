@@ -21,7 +21,7 @@ var APIKey            = process.env.APIKey;
 var clientID          = process.env.clientID;
 var clientSecret      = process.env.clientSecret;
 var authenticationURL = process.env.authenticationURL;
-var baseURI           = proess.env.baseURL;
+var baseURI           = process.env.baseURL;
 
 // Serve 'dynamic' jsx content being transformed if needed
 var srcDir = path.resolve(__dirname);
@@ -44,7 +44,7 @@ app.post('/api/bearer', function(req, res){
   parseJSONBody(req, function(data){
     getBearerToken(function(token){
       request.post({
-        url: baseURI + "/api/v2alpha1/text/lang-detect/", 
+        url: baseURL + "/api/v2alpha1/text/lang-detect/", 
         body: JSON.stringify(data),
         headers: {
             "Content-Type": "application/json",
