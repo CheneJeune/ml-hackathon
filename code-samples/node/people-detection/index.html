@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+
+
+<script type="text/javascript">
+
+
+function init(){
+	var canvas = document.getElementById("canvas"),
+	    ctx = canvas.getContext("2d");
+
+	document.getElementById('inp').onchange = function(e) {
+	  var img = new Image();
+	  img.onload = draw;
+	  img.onerror = failed;
+	  img.src = URL.createObjectURL(this.files[0]);
+
+
+	    var formData = new FormData();
+	    formData.append("image", this.files[0]);
+
+	    var request = new XMLHttpRequest();
+
+	      request.onreadystatechange = function() {
+	        if (request.readyState === 4) {
+	          var data = JSON.parse(request.response);
+	          console.log(data)
+	          drawBounds(document.getElementById('canvas').getContext('2d'), data.detection_boxes);
+	        }
+	      }
+
+	    request.open("POST", "/api/sceneTextRecognition");
+	    request.send(formData);
+
+	};
+	
+}
+
+function drawBounds(ctx, items){
+    for (var i = 0; i < items.length; i++) {
+        // get the box attributes
+        var left = items[i][1] * oCanvas.width  ;
+        var top  = items[i][0] * oCanvas.height ;
+        var width  = (items[i][3] * oCanvas.width  - items[i][1] * oCanvas.width  );
+        var height = (items[i][2] * oCanvas.height - items[i][0] * oCanvas.height );
+
+        // draw the box
+        ctx.strokeRect(left, top, width, height);
+        // write the text with the box angle
+        ctx.save();
+
+    }
+}
+
+var oCanvas;
+
+function draw() {
+  oCanvas = document.getElementById('canvas');
+  canvas.width = this.width / 2;
+  canvas.height = this.height / 2;
+  var ctx = canvas.getContext('2d');
+  ctx.rotate(90 * Math.PI/180);
+  ctx.scale(0.5, 0.5)
+  ctx.drawImage(this, 0,0);
+}
+
+function failed() {
+  console.error("The provided file couldn't be loaded as an Image media");
+}
+
+</script>
+
+</head>
+
+
+
+<body onload="init()">
+
+
+<input type="file" id="inp">
+<canvas id="canvas" style="width: 50%"></canvas>
+
+<div id="textVersionDiv"></div>
+
+
+</body>
+</html>
